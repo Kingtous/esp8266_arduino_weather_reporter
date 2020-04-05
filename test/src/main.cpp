@@ -2,15 +2,19 @@
  * @Author: Kingtous
  * @Date: 2020-04-05 08:03:27
  * @LastEditors: Kingtous
- * @LastEditTime: 2020-04-05 23:25:17
+ * @LastEditTime: 2020-04-06 00:58:46
  * @Description: Kingtous' Code
  */
 #include <Arduino.h>
 #include <FS.h>
 #include "wifi_manager.h"
 #include <U8g2lib.h>
+#include <u8g2_wqy.h>
 
-U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0,SCL,SDA);
+#define SSD1306_SDA 5
+#define SSD1306_SLK 4
+// rotate clock data
+U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, SSD1306_SLK, SSD1306_SDA);
 
 #define BAUD_RATE 115200
 #define PIN_LED 2
@@ -26,6 +30,7 @@ void onWiFiConnected()
 void initScreen()
 {
   u8g2.begin();
+  u8g2.enableUTF8Print();
 }
 
 // init Serial Baud Rate to 115200
@@ -60,10 +65,10 @@ void loop()
   // put your main code here, to run repeatedly:
   manager->handleServerClient();
   u8g2.firstPage();
-  do {
-    Serial.println("draw");
-    u8g2.setFont(u8g2_font_unifont_t_chinese1);
-    u8g2.drawUTF8(0,15,"你好,MDL机器人:");
-  } while ( u8g2.nextPage() );
+  do
+  {
+    u8g2.setFont(u8g2_font_wqy14_t_gb2312);
+    u8g2.drawUTF8(30, 30, "Hello World!");
+  } while (u8g2.nextPage());
   delay(1000);
 }
