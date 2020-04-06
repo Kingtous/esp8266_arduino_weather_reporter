@@ -36,7 +36,8 @@
 			"__bit_reference": "cpp",
 			"__hash_table": "cpp",
 			"__tree": "cpp",
-			"initializer_list": "cpp"
+			"initializer_list": "cpp",
+			"stdexcept": "cpp"
 		}
 	}
 }

@@ -2,7 +2,7 @@
  * @Author: Kingtous
  * @Date: 2020-04-04 22:08:24
  * @LastEditors: Kingtous
- * @LastEditTime: 2020-04-05 19:40:33
+ * @LastEditTime: 2020-04-06 18:59:42
  * @Description: Kingtous' Code
  */
 
@@ -10,7 +10,6 @@
 
 WiFiManager::WiFiManager()
 {
-    this->client = new WiFiClient();
     this->server = new ESP8266WebServer(AP_PORT);
     this->udpServer = new WiFiUDP();
 }
@@ -29,18 +28,24 @@ void WiFiManager::setWiFiConnectedCallback(Callback callback)
 
 bool WiFiManager::closeAP()
 {
+    WiFi.mode(WIFI_STA);
     return WiFi.softAPdisconnect();
 }
 
 void WiFiManager::openAP()
 {
     Serial.println("AP: Opening AP mode.");
+    WiFi.mode(WIFI_AP);
     while (!WiFi.softAP("ESP8266_CONFIG", "kingtous"))
     {
         Serial.println("AP:AP Create Failed.");
         delay(5000);
     }
     startWebServer();
+}
+
+void WiFiManager::setWiFiConnectFailedCallback(Callback callback){
+    this->onWiFiConnectFailedCallback = callback;
 }
 
 void WiFiManager::init()
@@ -52,7 +57,6 @@ void WiFiManager::startWebServer()
 {
     if (this->server != nullptr)
     {
-        this->server->begin();
         // home page
         this->server->on("/", [this]() {
             String htmlContent;
@@ -62,9 +66,9 @@ void WiFiManager::startWebServer()
             String ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' + String(ip[2]) + '.' + String(ip[3]);
             htmlContent = "<!DOCTYPE HTML>\r\n<html>Hello from ESP8266 at ";
             htmlContent += ipStr;
-            htmlContent += "<p>";
-            htmlContent += "<ol>";
-            htmlContent += "</p><form method='get' action='setWiFi'><label>SSID: </label><input name='s' length=32><input name='p' length=64><input type='submit'></form>";
+            htmlContent += "<p><form method='get' action='setWiFi'><label>SSID: </label><input name='s' length=32><label>Password:</label><input name='p' length=64><input type='submit'></form></p>";
+            htmlContent += "<p><br>Weather Setting:</br><form method='get' action='setWeather'><label>City Code (9 numbers): </label><input name='w' length=9><input type='submit'></form></p>";
+            htmlContent += "<a href=\"https://github.com/baichengzhou/weather.api/blob/master/src/main/resources/citycode-2019-08-23.json\">View All China Region City Code</a>";
             htmlContent += "</html>";
             statusCode = 200;
             this->server->send(statusCode, "text/html", htmlContent);
@@ -79,7 +83,7 @@ void WiFiManager::startWebServer()
             if (ssid.length() != 0)
             {
                 Serial.println("clearing eeprom");
-                for (int i = 0; i < 96; ++i)
+                for (int i = 0; i < 128; ++i)
                 {
                     EEPROM.write(i, 0);
                 }
@@ -121,7 +125,30 @@ void WiFiManager::startWebServer()
                 this->connectWiFi();
             }
         });
+        this->server->on("/setWeather", [this]() {
+            String code = this->server->arg("w");
+            Serial.print("Get City Code:");
+            Serial.println(code);
+            if (code.length() != 9)
+            {
+                this->server->send(404, "application/json", "{\"Error\":404}");
+            } else {
+                // 写入
+                for (int i = 0; i < 9; i++)
+                {
+                    Serial.println("write a bit");
+                    EEPROM.write(96 + i, code[i]);
+                }
+                EEPROM.commit();
+                this->server->send(200, "application/json", "{\"Success\":200}");
+            }
+        });
+        this->server->begin();
     }
+}
+
+bool WiFiManager::wifiConnected(){
+    return WiFi.status() == WL_CONNECTED;
 }
 
 void WiFiManager::connectWiFi()
@@ -154,7 +181,7 @@ void WiFiManager::connectWiFi()
     }
     else
     {
-        
+        this->onWiFiConnectFailedCallback();
         openAP();
     }
 }
@@ -163,7 +190,7 @@ bool WiFiManager::testWiFi()
 {
     int c = 0;
     Serial.println("Waiting for WiFi to connect");
-    while (c < 10)
+    while (c < 20)
     {
         if (WiFi.status() == WL_CONNECTED)
         {

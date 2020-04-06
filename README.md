@@ -2,7 +2,7 @@
  * @Author: Kingtous
  * @Date: 2020-04-05 00:03:45
  * @LastEditors: Kingtous
- * @LastEditTime: 2020-04-06 01:03:31
+ * @LastEditTime: 2020-04-06 19:38:23
  * @Description: Kingtous' Code
  -->
 #### Arduino ESP8266 程序
@@ -13,8 +13,9 @@
 - 语言：C++ 17
 
 ### 功能
-- 未连接成功，自动开始AP和WebServer，访问 `192.168.4.1` 即可设置新WiFi
+- 未连接成功，自动开始AP和WebServer，访问 `192.168.4.1` 即可设置WiFi、天气
 - 连接成功，LED灯常亮。正在连接，LED灯闪烁。连接失败开启AP，LED灯熄灭
+- 连接成功后自动获取天气并显示
 
 ### 目前使用的第三方库
 > 请下载第三方库项目的`src`文件夹，更名后放入`lib`文件夹

@@ -2,7 +2,7 @@
  * @Author: Kingtous
  * @Date: 2020-04-04 22:08:03
  * @LastEditors: Kingtous
- * @LastEditTime: 2020-04-05 18:19:24
+ * @LastEditTime: 2020-04-06 16:21:46
  * @Description: Kingtous' Code
  */
 #ifndef WIFI_MANAGER_H
@@ -22,20 +22,21 @@ public:
 
     void init();
     void setWiFiConnectedCallback(Callback callback);
+    void setWiFiConnectFailedCallback(Callback callback);
     void openAP();
     bool closeAP();
     void connectWiFi();
+    bool wifiConnected();
     void udpListen(Callback callback);
     void stopUdpListen();
     void handleServerClient();
+    void startWebServer();
 
 private:
-    WiFiClient *client = nullptr;
     ESP8266WebServer *server = nullptr;
     WiFiUDP *udpServer = nullptr;
     Callback onWiFiConnectedCallback = nullptr;
-
-    void startWebServer();
+    Callback onWiFiConnectFailedCallback = nullptr;
     bool testWiFi(); // if connected, return True
 };
 
