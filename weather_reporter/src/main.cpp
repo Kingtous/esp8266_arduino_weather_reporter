@@ -1,8 +1,13 @@
+// Copyright (c) 2020 Kingtous
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 /*
  * @Author: Kingtous
  * @Date: 2020-04-05 08:03:27
  * @LastEditors: Kingtous
- * @LastEditTime: 2020-04-06 19:11:04
+ * @LastEditTime: 2020-04-07 20:56:56
  * @Description: Kingtous' Code
  */
 #include <Arduino.h>

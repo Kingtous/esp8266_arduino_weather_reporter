@@ -1,8 +1,13 @@
+// Copyright (c) 2020 Kingtous
+// 
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
+
 /*
  * @Author: Kingtous
  * @Date: 2020-04-06 09:36:24
  * @LastEditors: Kingtous
- * @LastEditTime: 2020-04-06 19:37:03
+ * @LastEditTime: 2020-04-07 20:57:48
  * @Description: Kingtous' Code
  */
 
