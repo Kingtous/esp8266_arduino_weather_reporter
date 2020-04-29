@@ -7,7 +7,7 @@
  * @Author: Kingtous
  * @Date: 2020-04-05 08:03:27
  * @LastEditors: Kingtous
- * @LastEditTime: 2020-04-07 20:56:56
+ * @LastEditTime: 2020-04-29 19:52:27
  * @Description: Kingtous' Code
  */
 #include <Arduino.h>
@@ -16,6 +16,8 @@
 #include "weather_manager.h"
 #include <U8g2lib.h>
 #include <u8g2_wqy.h>
+#include <string>
+#include <sstream>
 
 #define SSD1306_SDA 5
 #define SSD1306_SLK 4
@@ -24,6 +26,9 @@ U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, SSD1306_SLK, SSD1306_SDA);
 
 #define BAUD_RATE 115200
 #define PIN_LED 2
+#define FLASH_KEY 0
+#define FORECAST_DAYS 10
+
 WiFiManager *manager;
 WeatherManager *weather;
 bool haveWeather = false;
@@ -56,8 +61,8 @@ void onWiFiConnectFailed()
   do
   {
     u8g2.setFont(u8g2_font_wqy14_t_gb2312);
-    u8g2.drawUTF8(5, 15, "WiFi连接失败");
-    u8g2.drawUTF8(20, 15, "开启AP模式...");
+    u8g2.drawUTF8(0, 15, "WiFi连接失败");
+    u8g2.drawUTF8(0, 30, "开启AP模式...");
   } while (u8g2.nextPage());
   digitalWrite(PIN_LED, LOW);
 }
@@ -96,6 +101,8 @@ void setup()
 {
   // init LED
   pinMode(PIN_LED, OUTPUT);
+  // init FLASK KEY
+  pinMode(FLASH_KEY, INPUT);
   // put your setup code here, to run once:
   manager = new WiFiManager();
   weather = new WeatherManager();
@@ -106,6 +113,65 @@ void setup()
   manager->setWiFiConnectedCallback(&onWiFiConnected);
   manager->setWiFiConnectFailedCallback(&onWiFiConnectFailed);
   manager->init();
+}
+
+
+int page_index = -1;
+int totalIndex = 0;
+int current_page_index = -1;
+Weather weatherDetail;
+
+void loadIndexPage(int page){
+  
+  current_page_index = page;
+  Serial.println("load next");
+    u8g2.firstPage();
+    do
+      {
+        u8g2.setFont(u8g2_font_wqy12_t_gb2312);
+        int y_offset = 12;
+        JsonObject object = weatherDetail.data[page];
+        if (!object.isNull())
+        {
+          // const char *data_forecast_0_date = data_forecast_0["date"];       // "06"
+          // const char *data_forecast_0_high = data_forecast_0["high"];       // "高温 21℃"
+          // const char *data_forecast_0_low = data_forecast_0["low"];         // "低温 11℃"
+          // const char *data_forecast_0_ymd = data_forecast_0["ymd"];         // "2020-04-06"
+          // const char *data_forecast_0_week = data_forecast_0["week"];       // "星期一"
+          // const char *data_forecast_0_sunrise = data_forecast_0["sunrise"]; // "06:09"
+          // const char *data_forecast_0_sunset = data_forecast_0["sunset"];   // "18:43"
+          // int data_forecast_0_aqi = data_forecast_0["aqi"];                 // 72
+          // const char *data_forecast_0_fx = data_forecast_0["fx"];           // "东北风"
+          // const char *data_forecast_0_fl = data_forecast_0["fl"];           // "<3级"
+          // const char *data_forecast_0_type = data_forecast_0["type"];       // "多云"
+          // const char *data_forecast_0_notice = data_forecast_0["notice"];   // "阴晴之间，谨防紫外线侵扰"
+          if (object.getMember("ymd") != NULL)
+          {
+            u8g2.drawUTF8(0, y_offset, object["ymd"]); // date
+            u8g2.drawUTF8(70, y_offset, weatherDetail.cityInfoCity.c_str()); // date
+            y_offset += 12;
+          }
+          if (!object.getMember("high").isNull())
+          {
+            u8g2.drawUTF8(0, y_offset, object["high"]); // high
+            y_offset += 12;
+          }
+          if (!object.getMember("low").isNull())
+          {
+            u8g2.drawUTF8(0, y_offset, object["low"]); // high
+            y_offset += 12;
+          }
+          if (!object.getMember("type").isNull())
+          {
+            u8g2.drawUTF8(0, y_offset, object["type"]); // high
+          }
+        }
+        std::stringstream ssTemp;
+        ssTemp << page << "/" << FORECAST_DAYS-1;
+        std::string st;
+        ssTemp >> st;
+        u8g2.drawUTF8(80, y_offset, st.c_str()); // type
+      } while (u8g2.nextPage());
 }
 
 void loop()
@@ -125,57 +191,73 @@ void loop()
       u8g2.drawUTF8(0, 14, "正在获取天气");
       u8g2.drawUTF8(0, 28, "请稍候...");
     } while (u8g2.nextPage());
-    String w = weather->getWeather();
-    if (w.length() == 0)
+    weatherDetail = weather->getWeather();
+    if (page_index == -1)
     {
-      // 没有获取到
-      Serial.println("waiting for 0.5s");
-      delay(500);
-    }
-    else
-    {
-      haveWeather = true;
-      u8g2.firstPage();
-      do
+      String w = weatherDetail.firstPage;
+        if (w.length() == 0)
       {
-        u8g2.setFont(u8g2_font_wqy14_t_gb2312);
-        Serial.println(w);
-        int y_offset = 14;
-        while (w.length() != 0)
+        // 没有获取到
+        Serial.println("waiting for 0.5s");
+        delay(500);
+      }
+      else
+      {
+        haveWeather = true;
+        u8g2.firstPage();
+        do
         {
-          String content = "";
-          int index = w.indexOf('\n');
-          if (index != -1)
+          u8g2.setFont(u8g2_font_wqy14_t_gb2312);
+          Serial.println(w);
+          int y_offset = 14;
+          while (w.length() != 0)
           {
-            if (index + 1 < w.length())
+            String content = "";
+            int index = w.indexOf('\n');
+            if (index != -1)
             {
-              content = w.substring(0, index);
-              w = w.substring(index + 1);
+              if (index + 1 < w.length())
+              {
+                content = w.substring(0, index);
+                w = w.substring(index + 1);
+              }
+              else
+              {
+                // index 是最后一个\n
+                content = w.substring(0, index);
+                w = "";
+              }
             }
             else
             {
-              // index 是最后一个\n
-              content = w.substring(0, index);
+              content = w;
               w = "";
             }
+            u8g2.drawUTF8(0, y_offset, content.c_str());
+            y_offset += 14;
           }
-          else
-          {
-            content = w;
-            w = "";
-          }
-          u8g2.drawUTF8(0, y_offset, content.c_str());
-          y_offset += 14;
-        }
-      } while (u8g2.nextPage());
-    }
+        } while (u8g2.nextPage());
+      }
+    } 
   }
-  else
+
+  bool isPressed = false;
+  while (haveWeather && digitalRead(FLASH_KEY) == LOW)
   {
-    delay(500);
+    isPressed = true;
+  }
+  if (isPressed)
+  {
+    page_index++;
+    if (page_index == FORECAST_DAYS)
+    {
+      // 14 days forecast
+      page_index = 0;
+    }
+    loadIndexPage(page_index);
   }
 
   // Web服务
-  Serial.println("handleServer");
+  //Serial.println("handleServer");
   manager->handleServerClient();
 }
