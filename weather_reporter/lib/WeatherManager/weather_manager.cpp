@@ -7,7 +7,7 @@
  * @Author: Kingtous
  * @Date: 2020-04-06 09:36:24
  * @LastEditors: Kingtous
- * @LastEditTime: 2020-04-29 18:55:22
+ * @LastEditTime: 2020-05-01 21:42:56
  * @Description: Kingtous' Code
  */
 
@@ -36,6 +36,7 @@ Weather WeatherManager::getWeather()
     }
     // request
     Serial.println("fetching data from " + weather_base_url + weather_api + cityCode + " at port 80");
+    fetch:
     if (this->client->connect(weather_base_url, 80))
     {
         Serial.println("weather server connect success.");
@@ -50,7 +51,10 @@ Weather WeatherManager::getWeather()
             content += client->readStringUntil('\r'); //按行读取数据
         }
         client->stop(); //关闭当前连接
-        Serial.println("get data:" + content);
+        if (content.length() == 0)
+        {
+            goto fetch;
+        }
         // start parse Json
         int jsonIndex = content.indexOf("{");
         content = content.substring(jsonIndex);
@@ -105,6 +109,6 @@ Weather WeatherManager::getWeather()
     }
     else
     {
-        return Weather();
+        goto fetch;
     }
 }

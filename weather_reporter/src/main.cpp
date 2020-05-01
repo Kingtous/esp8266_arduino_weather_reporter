@@ -7,7 +7,7 @@
  * @Author: Kingtous
  * @Date: 2020-04-05 08:03:27
  * @LastEditors: Kingtous
- * @LastEditTime: 2020-04-29 19:52:27
+ * @LastEditTime: 2020-05-01 21:54:47
  * @Description: Kingtous' Code
  */
 #include <Arduino.h>
@@ -42,7 +42,7 @@ void onWiFiConnected()
   u8g2.firstPage();
   do
   {
-    u8g2.setFont(u8g2_font_wqy14_t_gb2312);
+    u8g2.setFont(u8g2_font_wqy12_t_gb2312a);
     u8g2.drawUTF8(0, 14, "已接入WiFi网络");
     String IP = WiFi.localIP().toString();
     String content = "IP：" + IP;
@@ -60,7 +60,7 @@ void onWiFiConnectFailed()
   u8g2.firstPage();
   do
   {
-    u8g2.setFont(u8g2_font_wqy14_t_gb2312);
+    u8g2.setFont(u8g2_font_wqy12_t_gb2312a);
     u8g2.drawUTF8(0, 15, "WiFi连接失败");
     u8g2.drawUTF8(0, 30, "开启AP模式...");
   } while (u8g2.nextPage());
@@ -77,7 +77,7 @@ void initScreen()
   do
   {
     u8g2.drawXBMP(0, 0, 62, 59, col);
-    u8g2.setFont(u8g2_font_wqy14_t_gb2312);
+    u8g2.setFont(u8g2_font_wqy12_t_gb2312a);
     u8g2.drawUTF8(65, 15, "天气助手");
     u8g2.drawUTF8(65, 35, "正在连接");
     u8g2.drawUTF8(65, 50, "WiFi..");
@@ -128,7 +128,7 @@ void loadIndexPage(int page){
     u8g2.firstPage();
     do
       {
-        u8g2.setFont(u8g2_font_wqy12_t_gb2312);
+        u8g2.setFont(u8g2_font_wqy12_t_gb2312a);
         int y_offset = 12;
         JsonObject object = weatherDetail.data[page];
         if (!object.isNull())
@@ -145,7 +145,7 @@ void loadIndexPage(int page){
           // const char *data_forecast_0_fl = data_forecast_0["fl"];           // "<3级"
           // const char *data_forecast_0_type = data_forecast_0["type"];       // "多云"
           // const char *data_forecast_0_notice = data_forecast_0["notice"];   // "阴晴之间，谨防紫外线侵扰"
-          if (object.getMember("ymd") != NULL)
+          if (!object.getMember("ymd").isNull())
           {
             u8g2.drawUTF8(0, y_offset, object["ymd"]); // date
             u8g2.drawUTF8(70, y_offset, weatherDetail.cityInfoCity.c_str()); // date
@@ -177,7 +177,29 @@ void loadIndexPage(int page){
 void loop()
 {
   // put your main code here, to run repeatedly:
-
+  while (Serial.available()>0)
+  {
+    char ch = Serial.read();
+    if (ch == 'R')
+    {
+      haveWeather = false;
+      break;
+    }
+    else if (ch == 'N')
+    {
+      if (haveWeather)
+      {
+        page_index++;
+        if (page_index == FORECAST_DAYS)
+        {
+          // 14 days forecast
+          page_index = 0;
+        }
+        loadIndexPage(page_index);
+      }
+      break;
+    }
+  }
   // 天气服务
   if (!haveWeather && manager->wifiConnected())
   {
@@ -187,7 +209,7 @@ void loop()
     u8g2.firstPage();
     do
     {
-      u8g2.setFont(u8g2_font_wqy14_t_gb2312);
+      u8g2.setFont(u8g2_font_wqy12_t_gb2312a);
       u8g2.drawUTF8(0, 14, "正在获取天气");
       u8g2.drawUTF8(0, 28, "请稍候...");
     } while (u8g2.nextPage());
@@ -207,7 +229,7 @@ void loop()
         u8g2.firstPage();
         do
         {
-          u8g2.setFont(u8g2_font_wqy14_t_gb2312);
+          u8g2.setFont(u8g2_font_wqy12_t_gb2312a);
           Serial.println(w);
           int y_offset = 14;
           while (w.length() != 0)
